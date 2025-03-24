@@ -4,48 +4,18 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"pokedex/internal/pokeapi"
 	"strings"
 )
 
-type cliCommand struct {
-	name        string
-	description string
-	callback    func(*Config) error
-}
-
 type Config struct {
-	previousURL any
-	nextURL     string
+	pokeapiClient pokeapi.Client
+	previousURL   *string
+	nextURL       *string
 }
 
-func getCommands() map[string]cliCommand {
-	return map[string]cliCommand{
-		"exit": {
-			name:        "exit",
-			description: "Exit the Pokedex",
-			callback:    commandExit,
-		},
-		"help": {
-			name:        "help",
-			description: "Displays a help message",
-			callback:    commandHelp,
-		},
-		"map": {
-			name:        "map",
-			description: "Shows a list of location areas",
-			callback:    commandMap,
-		},
-		"mapb": {
-			name:        "mapb",
-			description: "Shows the previous list of location areas",
-			callback:    commandMapb,
-		},
-	}
-}
-
-func startRepl() {
+func startRepl(config *Config) {
 	cliCommands := getCommands()
-	config := Config{}
 
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -55,7 +25,6 @@ func startRepl() {
 		ipt := scanner.Text()
 		cleanedIpt := cleanInput(ipt)
 		if len(cleanedIpt) == 0 {
-			//            fmt.Print("\n")
 			continue
 		}
 
@@ -66,7 +35,7 @@ func startRepl() {
 			continue
 		}
 
-		err := handler.callback(&config)
+		err := handler.callback(config)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -77,4 +46,35 @@ func cleanInput(text string) []string {
 	lower := strings.ToLower(text)
 	res := strings.Fields(lower)
 	return res
+}
+
+type cliCommand struct {
+	name        string
+	description string
+	callback    func(*Config) error
+}
+
+func getCommands() map[string]cliCommand {
+	return map[string]cliCommand{
+		"exit": {
+			name:        "exit",
+			description: "exit the pokedex",
+			callback:    commandExit,
+		},
+		"help": {
+			name:        "help",
+			description: "displays a help message",
+			callback:    commandHelp,
+		},
+		"mapf": {
+			name:        "mapf",
+			description: "shows the next page of location areas",
+			callback:    commandMapf,
+		},
+		"mapb": {
+			name:        "mapb",
+			description: "shows the previous page of location areas",
+			callback:    commandMapb,
+		},
+	}
 }
