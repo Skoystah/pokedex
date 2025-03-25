@@ -2,7 +2,7 @@ package pokeapi
 
 import (
 	"encoding/json"
-	"fmt"
+	//"fmt"
 	"io"
 )
 
@@ -12,25 +12,31 @@ func (c *Client) ListLocations(pageURL *string) (LocationAreaResult, error) {
 		fullURL = *pageURL
 	}
 
-	res, err := c.httpClient.Get(fullURL)
-	if err != nil {
-		return LocationAreaResult{}, fmt.Errorf("error Get location res", err)
-	}
-	defer res.Body.Close()
+	var data []byte
+	if cachedEntry, exists := c.cache.Get(fullURL); exists {
+		//fmt.Printf("retrieving from cache %v\n", fullURL)
+		data = cachedEntry
+	} else {
+		res, err := c.httpClient.Get(fullURL)
+		if err != nil {
+			return LocationAreaResult{}, err
+		}
+		defer res.Body.Close()
 
-	//Decode JSON results
-	data, err := io.ReadAll(res.Body)
-	if err != nil {
-		return LocationAreaResult{}, fmt.Errorf("error reading data", err)
+		//Decode JSON results
+		data, err = io.ReadAll(res.Body)
+		if err != nil {
+			return LocationAreaResult{}, err
+		}
+
+		c.cache.Add(fullURL, data)
 	}
 
-	//decoder := json.NewDecoder(res.Body)
 	var locationAreas LocationAreaResult
 
-	//err = decoder.Decode(&locationAreas)
-	err = json.Unmarshal(data, &locationAreas)
+	err := json.Unmarshal(data, &locationAreas)
 	if err != nil {
-		return LocationAreaResult{}, fmt.Errorf("error unmarshaling res", err)
+		return LocationAreaResult{}, err
 	}
 
 	return locationAreas, nil
